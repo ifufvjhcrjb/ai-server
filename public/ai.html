@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaii-AI Chat</title>
+<style>
+body { font-family:sans-serif; background:#f5f5f5; margin:0; display:flex; flex-direction:column; height:100vh;}
+header { background:#4b6cb7; color:white; padding:1rem; text-align:center; font-size:1.5rem;}
+#chat { flex:1; padding:1rem; overflow-y:auto; }
+.message { margin:0.5rem 0; padding:0.5rem 1rem; border-radius:1rem; max-width:70%; }
+.user { background:#d1e7ff; align-self:flex-end; }
+.ai { background:#e2e2e2; align-self:flex-start; }
+#inputBox { display:flex; padding:1rem; background:white; }
+#inputBox input { flex:1; padding:0.5rem 1rem; border-radius:1rem; border:1px solid #ccc; }
+#inputBox button { margin-left:0.5rem; padding:0.5rem 1rem; border:none; border-radius:1rem; background:#4b6cb7; color:white; cursor:pointer;}
+#loginForm, #registerForm { display:flex; flex-direction:column; max-width:300px; margin:2rem auto; }
+#loginForm input, #registerForm input { margin:0.5rem 0; padding:0.5rem; border-radius:0.5rem; border:1px solid #ccc; }
+</style>
+</head>
+<body>
+
+<header>Kaii-AI Chat</header>
+
+<div id="loginForm">
+<h3>Login</h3>
+<input type="text" id="loginToken" placeholder="Token">
+<button onclick="login()">Login</button>
+<p>Belum punya token? <a href="#" onclick="showRegister()">Daftar</a></p>
+</div>
+
+<div id="registerForm" style="display:none;">
+<h3>Daftar</h3>
+<input type="text" id="registerName" placeholder="Nama">
+<input type="text" id="registerToken" placeholder="Token">
+<button onclick="register()">Daftar</button>
+<p>Sudah punya token? <a href="#" onclick="showLogin()">Login</a></p>
+</div>
+
+<div id="chatContainer" style="display:none;">
+<div id="chat"></div>
+<div id="inputBox">
+<input type="text" id="messageInput" placeholder="Tulis pesan..." onkeydown="if(event.key==='Enter') sendMessage()">
+<button onclick="sendMessage()">Kirim</button>
+</div>
+</div>
+
+<script>
+let token = "";
+function showRegister(){ document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='flex';}
+function showLogin(){ document.getElementById('registerForm').style.display='none'; document.getElementById('loginForm').style.display='flex';}
+async function register(){
+  const nama=document.getElementById('registerName').value;
+  const tkn=document.getElementById('registerToken').value;
+  const res=await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nama,nama,token:tkn})});
+  const data=await res.json();
+  if(data.success){alert('Daftar sukses!'); showLogin();}
+  else alert(data.error);
+}
+async function login(){
+  const tkn=document.getElementById('loginToken').value;
+  const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tkn})});
+  const data=await res.json();
+  if(data.success){ token=tkn; document.getElementById('loginForm').style.display='none'; document.getElementById('chatContainer').style.display='flex'; addMessage('ai','Haii, '+data.nama+'!'); }
+  else alert(data.error);
+}
+function addMessage(cls,msg){ const chat=document.getElementById('chat'); const div=document.createElement('div'); div.className='message '+cls; div.textContent=msg; chat.appendChild(div); chat.scrollTop=chat.scrollHeight;}
+async function sendMessage(){
+  const input=document.getElementById('messageInput');
+  const msg=input.value.trim(); if(!msg) return;
+  addMessage('user',msg); input.value='';
+  addMessage('ai','Mengetik...');
+  const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,message:msg})});
+  const data=await res.json();
+  document.querySelectorAll('.ai').forEach(e=>{if(e.textContent==='Mengetik...') e.textContent=data.reply;});
+}
+</script>
+</body>
+</html>
